@@ -104,9 +104,13 @@ function rateMove(G, i, prev) {
   const r = { wpB, wpA, loss, uci, cls: null };
   if (G.book[i]) { r.cls = "book"; return r; }
   const sec = e0.second;
+  // "Best" is Stockfish's top move, like on chess.com. Moves that are only nearly as good are "Excellent", even
+  // when they give away almost no win chance (in a won position almost every sensible move does that).
   let isBest = uci === e0.best;
-  if (!isBest && sec && uci === sec.uci && Math.abs(winPct(sec) - wpB) < 1) isBest = true; // just as good as the top move
-  if (!isBest && loss < 0.3) isBest = true;
+  const has = v => v !== null && v !== undefined;
+  if (!isBest && sec && uci === sec.uci && has(sec.cp) && has(e0.cp) && e0.cp - sec.cp <= 3) isBest = true; // a dead tie
+  // a checkmate, or a forced mate at least as fast as the engine's line (it may not have seen the mate yet)
+  if (!isBest && has(e1.mate) && e1.mate <= 0 && (e1.mate === 0 || !(e0.mate > 0) || -e1.mate < e0.mate)) isBest = true;
   let cls = isBest ? "best" : loss <= 2 ? "excellent" : loss <= 5 ? "good" : loss <= 10 ? "inaccuracy" : loss <= 20 ? "mistake" : "blunder";
   const pr = prev && prev.cls ? prev : null;
   if ((isBest || loss <= 2) && wpB < 97 && wpA >= 45 && sacrificeFen(fen, m.san)) cls = "brilliant";
@@ -322,7 +326,8 @@ function whyStronger(G, i, who, mode = "good", skip = new Set()) {
   // 1. checkmates (e0: from the mover's side; e1: from the opponent's side, after the move played)
   const mate = ev => ev.mate !== null && ev.mate !== undefined ? ev.mate : null, m0 = mate(e0), m1 = mate(e1);
   if (!skip.has("mate")) {
-    if (m0 !== null && m0 > 0) return [{ k: "mate", t: m1 !== null && m1 < 0 ? `${it} checkmates faster: in ${m0} instead of ${-m1}.` : `${it} leads to a forced checkmate in ${m0}.` }];
+    // -m1 counts the moves left after the one just played, so the played move's mate is in -m1 + 1
+    if (m0 !== null && m0 > 0) return [{ k: "mate", t: m1 !== null && m1 < 0 ? `${it} checkmates faster: in ${m0} instead of ${-m1 + 1}.` : `${it} leads to a forced checkmate in ${m0}.` }];
     if (m1 !== null && m1 > 0) return [{ k: "mate", t: m0 !== null && m0 < 0 ? `${it} holds out longer: after ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1} instead of ${-m0}.` : `After ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1}.` }];
   }
   if (M.promotion && Bm.promotion && M.promotion !== Bm.promotion) return [{ k: "promo", t: `A ${PNAME[Bm.promotion]} is worth more than a ${PNAME[M.promotion]}.` }];
