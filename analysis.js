@@ -58,13 +58,14 @@ const whiteWin = (ev, turn) => turn === "w" ? winPct(ev) : 100 - winPct(ev);
 /* ---------- material helpers (ported from the Repertoire Trainer) ---------- */
 const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }, PNAME = { p: "pawn", n: "knight", b: "bishop", r: "rook", q: "queen", k: "king" };
 function material(c) { let s = 0; c.board().forEach(row => row.forEach(p => { if (p) s += (p.color === "w" ? 1 : -1) * VAL[p.type]; })); return s; }
-function qs(c, alpha, beta, depth) {
+// capsOnly: skip pawn pushes that promote (captures that promote still count)
+function qs(c, alpha, beta, depth, capsOnly) {
   const stand = (c.turn() === "w" ? 1 : -1) * material(c);
   if (depth === 0 || stand >= beta) return stand;
   if (stand > alpha) alpha = stand;
-  const caps = c.moves({ verbose: true }).filter(m => m.captured || m.promotion)
+  const caps = c.moves({ verbose: true }).filter(m => m.captured || (m.promotion && !capsOnly))
     .sort((a, b) => (VAL[b.captured || "p"] - VAL[b.piece] / 10) - (VAL[a.captured || "p"] - VAL[a.piece] / 10));
-  for (const m of caps) { c.move(m); const s = -qs(c, -beta, -alpha, depth - 1); c.undo(); if (s >= beta) return s; if (s > alpha) alpha = s; }
+  for (const m of caps) { c.move(m); const s = -qs(c, -beta, -alpha, depth - 1, capsOnly); c.undo(); if (s >= beta) return s; if (s > alpha) alpha = s; }
   return alpha;
 }
 // material for the mover after a move, once the other side has made its best captures
@@ -76,14 +77,15 @@ function exposed(c) {
   const d = new Chess(); if (!d.load(f.join(" "))) return null;
   return new Set(d.moves({ verbose: true }).filter(r => r.captured && VAL[r.captured] >= 3).map(r => r.to));
 }
-// a real sacrifice: the moved piece (or a piece it uncovers) can be taken, and grabbing it wins at least 2 points
+// a real sacrifice: the moved piece (or a piece it uncovers) can be taken, and grabbing it wins at least 2 points.
+// Queening afterwards doesn't count as getting the material back: 37.Rxf6! Kxf6 38.e8=Q is still a sacrifice.
 function sacrificeFen(fen, mv) {
   const c = new Chess(fen);
   const me = c.turn() === "w" ? 1 : -1, before = me * material(c), pre = exposed(c), m = c.move(mv);
   if (!m || !pre) return false;
   const caps = c.moves({ verbose: true }).filter(r => r.captured);
   if (!caps.some(r => r.to === m.to || (VAL[r.captured] >= 3 && !pre.has(r.to)))) return false;
-  return -qs(c, -99, 99, 7) <= before - 2;
+  return -qs(c, -99, 99, 7, true) <= before - 2;
 }
 const uciOf = m => m.from + m.to + (m.promotion || "");
 function uciToMove(fen, u) { if (!u || u.length < 4) return null; const c = new Chess(fen); return c.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] || "q" }); }
@@ -113,7 +115,8 @@ function rateMove(G, i, prev) {
   if (!isBest && has(e1.mate) && e1.mate <= 0 && (e1.mate === 0 || !(e0.mate > 0) || -e1.mate < e0.mate)) isBest = true;
   let cls = isBest ? "best" : loss <= 2 ? "excellent" : loss <= 5 ? "good" : loss <= 10 ? "inaccuracy" : loss <= 20 ? "mistake" : "blunder";
   const pr = prev && prev.cls ? prev : null;
-  if ((isBest || loss <= 2) && wpB < 97 && wpA >= 45 && sacrificeFen(fen, m.san)) cls = "brilliant";
+  // brilliant = a sacrifice that is Stockfish's top move (a nearly-best sacrifice in a won position isn't brilliant)
+  if (isBest && wpB < 97 && wpA >= 45 && sacrificeFen(fen, m.san)) cls = "brilliant";
   else if (isBest && sec) {
     // the only good move: everything else is much worse (simple recaptures and forced moves don't count)
     const p = G.moves[i - 1], recapture = p && p.captured && m.to === p.to && m.captured;
