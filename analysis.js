@@ -215,6 +215,21 @@ function moveIdeas(fen, mv) {
   const kept = -qs(c, -99, 99, 7) - before; // material it nets once the other side's captures are done
   if (m.promotion) out.push({ k: "promote", t: `promotes to a ${PNAME[m.promotion]}` });
   if (m.captured && kept >= 0.9) out.push({ k: "grab", t: `takes the ${PNAME[m.captured]} on ${m.to}` });
+  // something that was hanging before the move and is safe after it
+  const c0 = new Chess(fen);
+  if (!m.captured && !c0.in_check()) {
+    const t0 = fen.split(" "); t0[1] = opp; t0[3] = "-";
+    const d0 = new Chess();
+    if (d0.load(t0.join(" "))) {
+      const still = new Set(grabs(c).map(x => x.mv.to));
+      for (const h of grabs(d0, true)) {
+        if (h.mv.to === m.from) { if (!still.has(m.to)) { out.push({ k: "defend", t: `moves the ${PNAME[m.piece]} to safety` }); break; } continue; }
+        // "protects" only when it really guards it now (not when a counter-threat merely makes taking it bad)
+        const q = boardAt(B, ...sqXY(h.mv.to)), [hx, hy] = sqXY(h.mv.to);
+        if (q && q.color === me && !still.has(h.mv.to) && guarded(B, hx, hy, me) && !guarded(c0.board(), hx, hy, me)) { out.push({ k: "defend", t: `protects the ${PNAME[q.type]} on ${h.mv.to}` }); break; }
+      }
+    }
+  }
   if (targets.length >= 2) out.push({ k: "fork", t: `attacks ${name(targets[0])} and ${name(targets[1])} at once` });
   if (pins.length) out.push({ k: "pin", t: pins[0].t });
   // a threat: a capture that would win material if it were the mover's turn again (and wasn't there already)
@@ -225,7 +240,8 @@ function moveIdeas(fen, mv) {
     if (d.load(t.join(" "))) {
       const already = new Set(grabs(new Chess(fen)).map(x => x.mv.to)); // things it could already win before this move
       const g = grabs(d, true).find(x => !already.has(x.mv.to));
-      if (g) { threat = g; out.push({ k: "threat", t: `threatens ${g.mv.san}, winning ${amount(g.gain)}` }); }
+      // a piece can usually just step away, so for those say what it attacks rather than what it "wins"
+      if (g) { threat = g; out.push({ k: "threat", t: VAL[g.mv.captured] >= 3 ? `attacks the ${PNAME[g.mv.captured]} on ${g.mv.to}` : `threatens ${g.mv.san}, winning ${amount(g.gain)}` }); }
     }
   }
   const tq = targets[0];
@@ -294,53 +310,61 @@ function mobility(fen, mv) {
   const f = c.fen().split(" "); f[1] = f[1] === "w" ? "b" : "w"; f[3] = "-";
   const d = new Chess(); return d.load(f.join(" ")) ? d.moves().length : null;
 }
-// one or two sentences on why the engine's move beats the move played
-function whyStronger(G, i, who) {
+// why the engine's move beats the move played, as parts {k, t}: "mate", "promo", "win" (the best move wins
+// material), "loss" (the move played loses some), "ideas", "reply" (a strong answer the move played allows),
+// "king", "mobility", "fallback" (just the two scores).
+// mode: "good", "excellent" or "bad" (inaccuracy and worse); skip: kinds the caller already explained ("mate", "material")
+function whyStronger(G, i, who, mode = "good", skip = new Set()) {
   const fen = G.fens[i], e0 = G.E[i], e1 = G.E[i + 1], M = G.moves[i];
   const me = M.color, opp = me === "w" ? "b" : "w", Bm = uciToMove(fen, e0.best);
-  if (!Bm) return "";
+  if (!Bm) return [];
+  const it = mode === "excellent" ? SAN(Bm.san) : "It"; // "Almost as strong as the best move, Nf3. It..." would be unclear
   // 1. checkmates (e0: from the mover's side; e1: from the opponent's side, after the move played)
   const mate = ev => ev.mate !== null && ev.mate !== undefined ? ev.mate : null, m0 = mate(e0), m1 = mate(e1);
-  if (m0 !== null && m0 > 0) return m1 !== null && m1 < 0 ? `It checkmates faster: in ${m0} instead of ${-m1}.` : `It leads to a forced checkmate in ${m0}.`;
-  if (m1 !== null && m1 > 0) return m0 !== null && m0 < 0 ? `It holds out longer: after ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1} instead of ${-m0}.` : `After ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1}.`;
-  if (M.promotion && Bm.promotion && M.promotion !== Bm.promotion) return `A ${PNAME[Bm.promotion]} is worth more than a ${PNAME[M.promotion]}.`;
+  if (!skip.has("mate")) {
+    if (m0 !== null && m0 > 0) return [{ k: "mate", t: m1 !== null && m1 < 0 ? `${it} checkmates faster: in ${m0} instead of ${-m1}.` : `${it} leads to a forced checkmate in ${m0}.` }];
+    if (m1 !== null && m1 > 0) return [{ k: "mate", t: m0 !== null && m0 < 0 ? `${it} holds out longer: after ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1} instead of ${-m0}.` : `After ${SAN(M.san)}, ${who.name(opp, true)} has a forced checkmate in ${m1}.` }];
+  }
+  if (M.promotion && Bm.promotion && M.promotion !== Bm.promotion) return [{ k: "promo", t: `A ${PNAME[Bm.promotion]} is worth more than a ${PNAME[M.promotion]}.` }];
   // 2. it wins material, or the move played loses some, over the next few moves. Only claimed when Stockfish's
   // scores back it up: a move that just loses a piece isn't rated "good", so a big difference in a short line
   // is usually only timing (the other move gets it back a bit later).
-  const lb = lineGain(fen, e0.pv && e0.pv[0] === e0.best ? e0.pv : [e0.best], me, 8);
-  const lm = lineGain(fen, [uciOf(M)].concat(e1.pv || []), me, 8);
-  const diff = lb.gain - lm.loss, cpGap = (e0.cp || 0) + (e1.cp || 0);
-  if (diff >= 0.9 && cpGap >= 70 * diff) {
-    if (lb.gain >= 0.9) return `It wins ${amount(diff)}${lineTo(lb.played)}.`;
-    if (lm.loss <= -0.9) return `After ${SAN(M.san)}, ${who.name(opp, true)} can win ${amount(diff)}${lineTo(lm.played)}. ${SAN(Bm.san)} keeps everything safe.`;
+  if (!skip.has("material") && m0 === null && m1 === null) {
+    const lb = lineGain(fen, e0.pv && e0.pv[0] === e0.best ? e0.pv : [e0.best], me, 8);
+    const lm = lineGain(fen, [uciOf(M)].concat(e1.pv || []), me, 8);
+    const diff = lb.gain - lm.loss, cpGap = (e0.cp || 0) + (e1.cp || 0);
+    if (diff >= 0.9 && cpGap >= 70 * diff) {
+      if (lb.gain >= 0.9) return [{ k: "win", t: `${it} wins ${amount(diff)}${lineTo(lb.played)}.` }];
+      if (lm.loss <= -0.9) return [{ k: "loss", t: `After ${SAN(M.san)}, ${who.name(opp, true)} can win ${amount(diff)}${lineTo(lm.played)}.` + (mode === "bad" ? "" : ` ${SAN(Bm.san)} keeps everything safe.`) }];
+    }
   }
   const out = [];
   // 3. what the best move does that the move played doesn't
   // general ideas (developing, castling...) count as shared when both moves do them, even with different pieces
-  const key = x => ["grab", "fork", "pin", "threat", "attack", "file"].includes(x.k) ? x.t : x.k;
+  const key = x => ["grab", "defend", "fork", "pin", "threat", "attack", "file"].includes(x.k) ? x.t : x.k;
   const mine = new Set(moveIdeas(fen, M.san).map(key));
   const extra = moveIdeas(fen, Bm.san).filter(x => !mine.has(key(x))).slice(0, 2);
-  if (extra.length) out.push(`It ${extra.map(x => x.t).join(extra[0].t.includes(",") ? ", and " : " and ")}.`);
+  if (extra.length) out.push({ k: "ideas", t: `${it} ${extra.map(x => x.t).join(extra[0].t.includes(",") ? ", and " : " and ")}.` });
   // 4. the move played allows a strong answer that the best move doesn't
   const R = e1.best ? uciToMove(G.fens[i + 1], e1.best) : null;
   if (R) {
     const cB = new Chess(fen); cB.move(Bm.san);
     const afterBest = new Set(moveIdeas(cB.fen(), R.from + R.to + (R.promotion || "")).map(x => x.t));
     const hit = moveIdeas(G.fens[i + 1], R.san).find(x => ["fork", "pin", "threat", "attack", "check"].includes(x.k) && !afterBest.has(x.t));
-    if (hit) out.push(`After ${SAN(M.san)}, ${who.name(opp, true)} can answer ${SAN(R.san)}, which ${hit.t}.`);
+    if (hit) out.push({ k: "reply", t: `After ${SAN(M.san)}, ${who.name(opp, true)} can answer ${SAN(R.san)}, which ${hit.t}.` });
   }
-  if (!out.length && weakensKing(fen, M.san) && !weakensKing(fen, Bm.san)) out.push(`${SAN(M.san)} loosens the pawns in front of the king.`);
+  if (!out.length && weakensKing(fen, M.san) && !weakensKing(fen, Bm.san)) out.push({ k: "king", t: `${SAN(M.san)} loosens the pawns in front of the king.` });
   if (!out.length) {
     const a = mobility(fen, Bm.san), b = mobility(fen, M.san);
-    if (a !== null && b !== null && a - b >= 5) out.push("It gives the pieces more room to move.");
+    if (a !== null && b !== null && a - b >= 5) out.push({ k: "mobility", t: `${it} gives the pieces more room to move.` });
   }
   // 5. nothing simple to point at: give the numbers
   if (!out.length) {
-    const evB = evalText(e0, me), evM = evalText(e1, opp);
-    out.push(evB !== evM ? `The difference is small: Stockfish gives ${evB} after ${SAN(Bm.san)} and ${evM} after ${SAN(M.san)}.` : "The difference is small.");
-    out.push("Press Show best line to see the plan.");
+    const evB = evalText(e0, me), evM = evalText(e1, opp), see = " Press Show best line to see the plan.";
+    if (mode === "bad") out.push({ k: "fallback", t: `Stockfish gives ${evB} after ${SAN(Bm.san)}, but ${evM} after ${SAN(M.san)}.` + see });
+    else out.push({ k: "fallback", t: (evB !== evM ? `The difference is small: Stockfish gives ${evB} after ${SAN(Bm.san)} and ${evM} after ${SAN(M.san)}.` : "The difference is small.") + see });
   }
-  return out.join(" ");
+  return out;
 }
 
 /* ---------- the coach ---------- */
@@ -367,17 +391,20 @@ function coachText(G, i, R, who) {
     out.push(/#/.test(m.san) ? "Checkmate!" : e0.mate > 0 ? "Keeps the forced checkmate going." : "The engine's top choice.");
   } else if (k === "excellent") {
     out.push(`Almost as strong as the best move${bestSan ? `, ${SAN(bestSan)}` : ""}.`);
+    if (bestSan) whyStronger(G, i, who, "excellent").forEach(p => out.push(p.t));
   } else if (k === "good") {
     out.push(`A decent move, but ${bestSan ? SAN(bestSan) : "another move"} was a little stronger.`);
-    if (bestSan) { const why = whyStronger(G, i, who); if (why) out.push(why); }
+    if (bestSan) whyStronger(G, i, who, "good").forEach(p => out.push(p.t));
   } else {
     // why it's bad, from simplest to most general
-    let why = null;
+    let why = null, whyK = null;
     if (mateNow) {
       const reply = uciToMove(G.fens[i + 1], e1.best);
       why = e1.mate === 1 && reply ? `This allows checkmate: ${who.name(opp)} can play ${SAN(reply.san)}.` : `This allows a forced checkmate in ${e1.mate}.`;
+      whyK = "mate";
     } else if (e0.mate > 0) {
       why = `${who.name(me)} had a forced checkmate in ${e0.mate}${bestSan ? `, starting with ${SAN(bestSan)}` : ""}.`;
+      whyK = "mate";
     } else {
       const vMine = valueAfter(fen, m.san), vBest = bestSan ? valueAfter(fen, bestSan) : null;
       const c0 = new Chess(fen), before = (me === "w" ? 1 : -1) * material(c0);
@@ -387,18 +414,26 @@ function coachText(G, i, R, who) {
         let worst = null, wv = 99;
         for (const x of c.moves({ verbose: true })) { if (!x.captured) continue; c.move(x); const v = qs(c, -99, 99, 6); c.undo(); if (v < wv) { wv = v; worst = x; } }
         const lost = before - vMine;
-        why = worst ? `It loses ${amount(lost)}: ${who.name(opp)} can take with ${SAN(worst.san)}.` : `It loses ${amount(lost)}.`;
+        why = worst ? `It loses ${amount(lost)}: ${who.name(opp, true)} can take with ${SAN(worst.san)}.` : `It loses ${amount(lost)}.`;
+        whyK = "material";
       } else if (vMine !== null && vBest !== null && vBest - vMine >= 1.5 && vBest - before >= 1.5) {
         why = `${SAN(bestSan)} would have won ${amount(vBest - before)}.`;
+        whyK = "material";
       } else if (k === "miss") {
         why = `${who.name(opp)} had just made a mistake, but this lets the chance slip away.`;
       } else {
         const reply = uciToMove(G.fens[i + 1], e1.best);
-        why = reply ? `${who.name(opp)} gets a strong answer: ${SAN(reply.san)}.` : null;
+        why = reply ? `${who.name(opp)} ${who.name(opp) === "You" ? "get" : "gets"} a strong answer: ${SAN(reply.san)}.` : null;
+        whyK = "generic";
       }
     }
+    // then why the best move is better. Allowing mate already says it all; parts about the move played (loss,
+    // reply, king) only replace the general "strong answer" line, and parts about the best move go after it.
+    const parts = bestSan && whyK !== "mate" ? whyStronger(G, i, who, "bad", new Set(["mate", ...(whyK === "material" ? ["material"] : [])])) : [];
+    if (whyK === "generic" || !why) { const j = parts.findIndex(p => ["loss", "reply", "king"].includes(p.k)); if (j >= 0) why = parts[j].t; }
     if (why) out.push(why);
     if (bestSan && !(e0.mate > 0)) out.push(`The best move was ${SAN(bestSan)}.`);
+    parts.filter(p => ["win", "promo", "ideas", "mobility", "fallback"].includes(p.k)).forEach(p => out.push(p.t));
   }
   return { head, body: out.join(" ") };
 }
