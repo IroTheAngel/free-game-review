@@ -26,7 +26,8 @@ To update later: download the ZIP again, replace the folder, and click the reloa
 ## Use
 
 - When a game ends on chess.com, click **Free Review** in the game-over box (under New Game / Rematch), or the floating **Free Review** button (drag it anywhere if it's in the way).
-- Or click the toolbar icon, type your chess.com username once, and pick one of your recent games.
+- Or click the toolbar icon, type your chess.com username once, and pick one of your recent games. Bot games you finish (or open on chess.com after they're over) show up in this list too.
+- For older bot games, click **Older bot games on chess.com** in the popup: chess.com's game history opens with a **Free Review** button under each bot game.
 - You can also paste any game in PGN format into the toolbar popup.
 - On the review page: ← and → step through the moves, ↑ jumps to the start and ↓ to the end, F flips the board.
 

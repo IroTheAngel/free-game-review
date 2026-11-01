@@ -19,6 +19,8 @@ label{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin-b
 .side{width:12px;height:12px;border-radius:3px;display:inline-block;vertical-align:-1px;margin-right:4px;border:1px solid #7a7670}
 .side.w{background:#f1efe9} .side.b{background:#2b2926}
 .go{font-weight:900;font-size:12.5px;color:var(--accent-text)}
+.more{display:block;margin:8px 0 0 auto;padding:4px 2px;border:0;background:none;font:inherit;font-weight:800;font-size:12.5px;color:var(--accent-text);cursor:pointer}
+.more:hover{text-decoration:underline}
 details{margin-top:12px}
 summary{cursor:pointer;font-weight:800;color:var(--muted);font-size:13px}
 details textarea{margin:8px 0;resize:vertical;font-size:12.5px}

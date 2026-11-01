@@ -13,3 +13,7 @@
 .fgr-modal-btn:not(.fgr-cc):active{transform:translateY(2px);box-shadow:0 2px 0 #45753c}
 .fgr-btn.fgr-drag{cursor:grabbing;transform:none;filter:brightness(1.05)}
 .fgr-btn:focus-visible{outline:2px solid #ffaa00;outline-offset:2px}
+/* game history page: under chess.com's Review button on each bot game (that cell ignores clicks, except on its buttons) */
+.fgr-row-btn{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;cursor:pointer;white-space:nowrap}
+.fgr-row-btn img{width:18px;height:18px;display:block;flex:none}
+.fgr-row-btn:not(.fgr-cc){height:32px;padding:0 10px;border:0;border-radius:6px;background:#81b64c;color:#fff;font:800 13px/1 "Segoe UI",system-ui,-apple-system,sans-serif;box-shadow:0 3px 0 #45753c}
