@@ -1,0 +1,15 @@
+.fgr-btn{position:fixed;right:20px;bottom:110px;touch-action:none;user-select:none;z-index:2147483000;display:flex;align-items:center;gap:8px;height:44px;padding:0 18px 0 9px;margin:0;border:0;border-radius:12px;
+  background:#81b64c;color:#fff;font:800 15px/1 "Segoe UI",system-ui,-apple-system,sans-serif;letter-spacing:0;text-shadow:0 1px 0 rgba(0,0,0,.2);
+  box-shadow:0 4px 0 #45753c,0 8px 22px rgba(0,0,0,.35);cursor:pointer}
+.fgr-btn img{width:28px;height:28px;display:block}
+.fgr-btn:hover{filter:brightness(1.08)}
+.fgr-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #45753c,0 6px 16px rgba(0,0,0,.3)}
+.fgr-modal-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:10px 0 0;cursor:pointer}
+.fgr-modal-btn img{width:30px;height:30px;display:block;flex:none}
+/* own look, only used if chess.com's Game Review button can't be found to copy */
+.fgr-modal-btn:not(.fgr-cc){height:52px;padding:0 16px;border:0;border-radius:10px;background:#81b64c;color:#fff;font:800 18px/1 "Segoe UI",system-ui,-apple-system,sans-serif;
+  text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 4px 0 #45753c}
+.fgr-modal-btn:not(.fgr-cc):hover{filter:brightness(1.08)}
+.fgr-modal-btn:not(.fgr-cc):active{transform:translateY(2px);box-shadow:0 2px 0 #45753c}
+.fgr-btn.fgr-drag{cursor:grabbing;transform:none;filter:brightness(1.05)}
+.fgr-btn:focus-visible{outline:2px solid #ffaa00;outline-offset:2px}

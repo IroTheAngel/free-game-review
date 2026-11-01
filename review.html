@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Review</title>
+<link rel="icon" href="icons/icon32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="review.css">
+</head>
+<body>
+<header>
+  <img class="logo" src="icons/icon48.png" alt="">
+  <div class="titles"><h1>Free Game Review</h1><div id="gameTitle" class="muted"></div></div>
+  <span class="sp"></span>
+  <a id="ccLink" class="iconbtn txt" target="_blank" rel="noopener noreferrer" hidden>Open on chess.com</a>
+  <button class="iconbtn" id="settingsBtn" aria-label="Engine settings" aria-expanded="false"><img class="ico" src="img/settings.png" alt=""></button>
+  <button class="iconbtn" id="soundBtn" aria-label="Sound"></button>
+  <button class="iconbtn" id="themeBtn" aria-label="Theme"></button>
+  <div id="settings" class="pop" hidden>
+    <div class="pophead">Engine strength</div>
+    <div class="seg" id="depthSeg" role="radiogroup">
+      <button data-d="12" role="radio">Fast</button><button data-d="16" role="radio">Normal</button><button data-d="20" role="radio">Deep</button>
+    </div>
+    <p class="muted small">Deeper takes longer but finds more. A new strength re-checks the game.</p>
+  </div>
+</header>
+
+<main id="main">
+  <section class="boardcol">
+    <div class="pstrip" id="pTop"></div>
+    <div class="boardrow">
+      <div class="evalbar" id="evalbar"><div class="fill" id="evalFill"></div><span class="lbl" id="evalLbl"></span></div>
+      <div class="board" id="board">
+        <div class="squares" id="squares"></div>
+        <svg class="arrows" id="arrows" viewBox="0 0 800 800" aria-hidden="true"></svg>
+      </div>
+    </div>
+    <div class="pstrip" id="pBot"></div>
+    <div class="nav">
+      <button class="navbtn" id="nFirst" aria-label="First move"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zm3.5 7 8.5 7V5z"/></svg></button>
+      <button class="navbtn" id="nPrev" aria-label="Previous move"><svg viewBox="0 0 24 24"><path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z"/></svg></button>
+      <button class="navbtn" id="nNext" aria-label="Next move"><svg viewBox="0 0 24 24"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4 6.6-6.6z"/></svg></button>
+      <button class="navbtn" id="nLast" aria-label="Last move"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM6 5v14l8.5-7z"/></svg></button>
+      <button class="navbtn" id="nFlip" aria-label="Flip board" title="Flip board (F)"><img class="ico" src="img/flip.png" alt=""></button>
+    </div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div id="status" class="status"></div>
+    <div id="coach" class="coach" hidden></div>
+    <div id="graph" class="graph" hidden></div>
+    <div id="summary" class="summary" hidden></div>
+    <div id="moves" class="moves" hidden></div>
+    <div id="actions" class="actions" hidden></div>
+  </aside>
+</main>
+
+<script src="lib/chess.min.js"></script>
+<script src="shared.js"></script>
+<script src="engine.js"></script>
+<script src="analysis.js"></script>
+<script src="review.js"></script>
+</body>
+</html>

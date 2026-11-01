@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Free Game Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header>
+  <img class="logo" src="icons/icon48.png" alt="">
+  <div><h1>Free Game Review</h1><p class="muted">Your finished chess.com games, reviewed by Stockfish 18</p></div>
+</header>
+<form id="userForm" autocomplete="off">
+  <label for="user">Your chess.com username</label>
+  <div class="row"><input type="text" id="user" placeholder="username" spellcheck="false" maxlength="25"><button class="btn primary small" type="submit">Show games</button></div>
+</form>
+<div id="msg" class="msg" hidden></div>
+<ul id="games" class="games"></ul>
+<details id="pgnBox">
+  <summary>Review a PGN instead</summary>
+  <textarea id="pgn" rows="5" placeholder="Paste a game in PGN format (for example a game against a bot, which isn't in the public archive)"></textarea>
+  <button class="btn ghost small" id="pgnGo" type="button">Review this PGN</button>
+</details>
+<script src="shared.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>

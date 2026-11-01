@@ -1,0 +1,54 @@
+/* Shared look, matching the Repertoire Trainer: dark playing-site colours by default, with a light mode. */
+:root{
+  --bg:#2b2926; --panel:#211f1c; --panel-2:#1a1917; --line:#3c3935;
+  --fg:#f1efe9; --muted:#a8a49d; --dim:#77736c;
+  --light:#dcdcdc; --dark:#ababab;
+  --accent:#81b64c; --accent-deep:#45753c; --accent-ink:#ffffff; --accent-text:#81b64c;
+  --hl:rgba(255,255,51,.42); --sel:rgba(255,255,51,.55);
+  --good:#81b64c; --bad:#e05a4a; --arrow:#ffaa00; --best-arrow:#5fae3a; --next:#5c9ad6;
+  --ghost-hover:#4a4642; --ghost-shadow:#262421; --row-alt:rgba(255,255,255,.025);
+  --board-shadow:0 6px 24px rgba(0,0,0,.35); --scrim:rgba(10,9,8,.68);
+  --r-brilliant:#1aa9a3; --r-great:#5a8ab5; --r-best:#79ad3f; --r-excellent:#8fbf4f; --r-good:#8eaa73; --r-book:#a8865f;
+  --r-inacc:#e2ae22; --r-mistake:#e5822a; --r-miss:#e8655a; --r-blunder:#d2362b;
+  --display:"Nunito",ui-rounded,"Segoe UI",system-ui,sans-serif;
+  --body:"Nunito","Segoe UI",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+:root[data-mode="light"]{
+  --bg:#eeece7; --panel:#ffffff; --panel-2:#f4f3ef; --line:#e3e0d9;
+  --fg:#24221e; --muted:#5d5951; --dim:#8a857c; --accent-text:#4c7a24;
+  --ghost-hover:#d8d4cb; --ghost-shadow:#cdc9c0; --row-alt:rgba(0,0,0,.03);
+  --board-shadow:0 6px 20px rgba(60,50,30,.18); --scrim:rgba(40,36,30,.45);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--body);font-size:15px;line-height:1.45}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:disabled{cursor:default;opacity:.5}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--arrow);outline-offset:2px}
+a{color:var(--accent-text)}
+.ico{width:22px;height:22px;flex:none;display:block}
+.btn{height:44px;padding:0 16px;border-radius:10px;font-weight:900;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 0 var(--accent-deep);text-shadow:0 1px 0 rgba(0,0,0,.2)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn.primary:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 var(--accent-deep)}
+.btn.ghost{background:var(--line);color:var(--fg);box-shadow:0 4px 0 var(--ghost-shadow)}
+.btn.ghost:hover:not(:disabled){background:var(--ghost-hover)}
+.btn.ghost:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 var(--ghost-shadow)}
+.btn.small{height:34px;padding:0 12px;font-size:13.5px;border-radius:8px}
+.btn .ico{width:24px;height:24px}
+input[type=text],textarea{font:inherit;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+input[type=text]::placeholder,textarea::placeholder{color:var(--dim)}
+.muted{color:var(--muted)}
+/* move-rating badges */
+.r-brilliant{--rc:var(--r-brilliant)}.r-great{--rc:var(--r-great)}.r-best{--rc:var(--r-best)}.r-excellent{--rc:var(--r-excellent)}.r-good{--rc:var(--r-good)}
+.r-book{--rc:var(--r-book)}.r-inaccuracy{--rc:var(--r-inacc)}.r-mistake{--rc:var(--r-mistake)}.r-miss{--rc:var(--r-miss)}.r-blunder{--rc:var(--r-blunder)}
+.r-inaccuracy{--rt:#3b2c00}
+.rb{display:inline-grid;place-items:center;flex:none;width:20px;height:20px;border-radius:50%;background:var(--rc);color:var(--rt,#fff);font-family:var(--display);font-weight:900;font-size:11px;letter-spacing:-.06em;line-height:1}
+.rb svg{width:62%;height:62%;fill:currentColor}
+.r-inaccuracy .rb svg,.rb.r-inaccuracy svg{fill:#3b2c00}
+/* picture badges (img/moves/*.png) bring their own circle */
+.pic-badges .rb,.pic-badges .badge{background:none;box-shadow:none}
+.rb img,.badge img{width:100%;height:100%;display:block}
