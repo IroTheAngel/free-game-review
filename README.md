@@ -44,6 +44,7 @@ The extension's own code is free software under the GNU GPL v3 (`LICENSE`), the 
 - chess.js 0.10.3 by Jeff Hlywa, BSD 2-Clause: `lib/LICENSE-chess.js.txt`.
 - Chess pieces: "Staunty" by sadsnake1, from the Lichess piece collection, CC BY-NC-SA 4.0 (`pieces/staunty/LICENSE.txt`). Free and not sold, as that licence requires.
 - Opening names from Lichess's chess-openings list (CC0): https://github.com/lichess-org/chess-openings
+- Opening book (`data/book.bin`): positions that players rated 2200+ reached in at least 3 tournament games, built from the Lichess broadcast database (https://database.lichess.org, April–September 2026), CC BY-SA 4.0. The book file is shared under the same licence (`data/book-LICENSE.txt`).
 - Interface icons from Free Icon Pack v3.1 by @gvesster.
 - Accuracy uses the formula Lichess publishes; move ratings use win-chance loss, similar to the categories chess.com uses.
 

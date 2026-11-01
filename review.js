@@ -599,6 +599,18 @@ function bindPractice() {
 /* ---------- loading a game ---------- */
 const START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const epd = fen => fen.split(" ").slice(0, 4).join(" ");
+// the opening book: positions that strong players reached in several tournament games (data/book.bin, built
+// from Lichess broadcast games), stored as sorted 32-bit FNV-1a hashes of "placement side castling"
+let BOOK = new Uint32Array(0);
+function inBookFile(fen) {
+  const s = fen.split(" ").slice(0, 3).join(" ");
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h >>>= 0;
+  let lo = 0, hi = BOOK.length - 1;
+  while (lo <= hi) { const mid = (lo + hi) >> 1; if (BOOK[mid] === h) return true; if (BOOK[mid] < h) lo = mid + 1; else hi = mid - 1; }
+  return false;
+}
 function toSec(t) { const p = t.split(":").map(Number); return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : p[0]; }
 function parseGame(pgn) {
   const c = new Chess();
@@ -613,13 +625,14 @@ function parseGame(pgn) {
   const clocks = [...body.matchAll(/\[%clk\s+([\d:.]+)\]/g)].map(x => toSec(x[1]));
   const tc = H.TimeControl || "", base = /^\d+/.test(tc) ? +tc.split("+")[0] : null;
   const G = { fens, moves, E: new Array(fens.length).fill(null), book: [], openingAt: [], clocks: clocks.length >= moves.length - 1 ? clocks : [], base, H };
-  // book moves: every position so far is a named opening position
-  let inBook = !H.FEN, name = null;
+  // book moves: the position after the move is a named opening position or in the opening book. Checked for
+  // each move on its own, so a game that leaves known theory and comes back to it (a transposition) is book again.
+  let name = null;
   G.openingAt[0] = null;
   for (let i = 0; i < moves.length; i++) {
     const o = OPEN[epd(fens[i + 1])];
     if (o) name = o[1];
-    inBook = inBook && !!o; G.book[i] = inBook; G.openingAt[i + 1] = name;
+    G.book[i] = !H.FEN && (!!o || inBookFile(fens[i + 1])); G.openingAt[i + 1] = name;
   }
   G.opening = name || (H.ECOUrl ? decodeURIComponent(H.ECOUrl.split("/").pop()).replace(/-/g, " ").replace(/\.\.\./g, "") : null);
   // the game's last position, when it ended on the board
@@ -795,6 +808,7 @@ async function loadFromPagePgn(id) {
   drawHeaderBtns(); buildBoard(); drawBoard(); drawEval();
   loadMoveIcons(() => render());
   try { OPEN = await (await fetch("data/openings.json")).json(); } catch (e) { OPEN = {}; }
+  try { BOOK = new Uint32Array(await (await fetch("data/book.bin")).arrayBuffer()); } catch (e) { BOOK = new Uint32Array(0); }
   if (params.get("pgn")) loadFromPgn();
   else if (params.get("id") && /^\d+$/.test(params.get("id"))) loadFromArchive([]);
   else setStatus(errorHTML("Open a finished game on chess.com and press <b>Free Review</b>, or pick a game from the extension's toolbar button."));

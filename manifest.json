@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Free Game Review",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Review your finished chess.com games with Stockfish 18 in your own browser: move ratings, accuracy, best moves and mistake practice.",
   "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   "action": {

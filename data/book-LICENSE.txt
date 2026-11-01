@@ -1,0 +1,13 @@
+data/book.bin - opening book for Free Game Review
+
+Built from the Lichess broadcast database (games from official over-the-board events broadcast on
+lichess.org), https://database.lichess.org/#broadcasts, files lichess_db_broadcast_2026-04 to 2026-09.
+Only games where both players are rated 2200 or more were used. A position is in the book when it was
+reached within the first 40 half-moves of at least 3 of those games (35,519 positions).
+
+Format: sorted 32-bit little-endian FNV-1a hashes of the first three FEN fields
+("<piece placement> <side to move> <castling>").
+
+The source games are released by Lichess under the Creative Commons Attribution-ShareAlike 4.0
+International licence (https://creativecommons.org/licenses/by-sa/4.0/). This book file is an
+adaptation of them and is shared under the same licence.
